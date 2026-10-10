@@ -1,0 +1,29 @@
+# Environment and secrets
+.env
+.env.local
+.env.*.local
+
+# Python bytecode
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Virtual environments
+venv/
+.venv/
+env/
+ENV/
+
+# Generated scan reports
+reports/
+
+# OS and editor artifacts
+.DS_Store
+*.swp
+*.swo
+*~
+
+# Bolt environment files
+.gitkeep
+package-lock.json
+.v3/

@@ -296,6 +296,7 @@ Normalized scan results
   +--> Console summary
   +--> JSON report
   +--> CSV report
+  +--> Flask web dashboard (mandatory deliverable, to be built after core scanning)
 ```
 
 The implementation may start in one file for simplicity, then be split
@@ -696,38 +697,38 @@ verified work changes them.
   -----------------------------------------------------------------------
   Phase             Scope             Initial status    Report
   ----------------- ----------------- ----------------- -----------------
-  0                 Repository        NOT STARTED       `phase0.md` when
-                    reconnaissance                      reportable
-                    and project                         
-                    contract                            
+  0                 Repository        IMPLEMENTED —     `phase0.md`
+                    reconnaissance    AWAITING USER
+                    and project       APPROVAL
+                    contract
 
   1                 CLI, input        NOT STARTED       `phase1.md`
-                    validation, safe                    
-                    scope                               
+                    validation, safe
+                    scope
 
   2                 TCP connect       NOT STARTED       `phase2.md`
-                    scanner                             
+                    scanner
 
   3                 Result model,     NOT STARTED       `phase3.md`
-                    banner                              
-                    identification,                     
-                    JSON/CSV                            
+                    banner
+                    identification,
+                    JSON/CSV
 
   4                 UDP probing       NOT STARTED       `phase4.md`
 
   5                 Host discovery    NOT STARTED       `phase5.md`
 
   6                 Integration,      NOT STARTED       `phase6.md`
-                    tests, measured                     
-                    evaluation                          
+                    tests, measured
+                    evaluation
 
   7                 Course            NOT STARTED       `phase7.md`
-                    documentation and                   
-                    demonstration                       
+                    documentation and
+                    demonstration
 
   8                 Optional          NOT STARTED       `phase8.md` if
                     extension, only                     selected
-                    if approved                         
+                    if approved
   -----------------------------------------------------------------------
 
 Update this table whenever the status changes. Do not mark phases
@@ -742,8 +743,17 @@ link to phase reports for details.
 
   ----------------------------------------------------------------------------------------------------
   Date         Phase        Work/decision   Verification/evidence   Setback or       Approval/commit
-                                                                    unresolved item  
+                                                                    unresolved item
   ------------ ------------ --------------- ----------------------- ---------------- -----------------
+  2026-10-10   0            Repository      Cloned GitHub repo;     Git status,      Pending user
+                            reconnaissance  inspected Git state,    log, remote     approval before
+                            and project     read DEV.md, verified    inspected;       commit.
+                            contract        Python 3.13.5; updated    Python version
+                                            .gitignore to protect    verified.
+                                            secrets; updated DEV.md
+                                            with Flask UI requirement
+                                            and phase tracker.
+
   2026-10-10   Project      Defined         Specification           Repository       No phase approval
                definition   NetScan-Lite    documented;             state, Python    or commit
                             scope, learning implementation not yet  environment, Git recorded.
@@ -791,9 +801,15 @@ choices.
 
   2026-10-10        Require explicit     The user wants to Mandatory Git gate
                     user approval before review each       for every phase.
-                    each phase commit.   completed phase   
-                                         before its work   
-                                         is committed.     
+                    each phase commit.   completed phase
+                                         before its work
+                                         is committed.
+
+  2026-10-10        Flask web UI is      User explicitly   Final application
+                    mandatory deliverable requested the     must include a
+                    (not optional)      final app must     Flask dashboard.
+                                         include a Flask
+                                         web dashboard.
   -----------------------------------------------------------------------------
 
 ------------------------------------------------------------------------
