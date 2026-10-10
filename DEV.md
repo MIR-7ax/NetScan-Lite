@@ -696,9 +696,9 @@ verified work changes them.
                     and project
                     contract
 
-  1                 CLI, input        IMPLEMENTED —     `phase1.md`
-                    validation, safe  AWAITING USER
-                    scope             APPROVAL
+  1                 CLI, input        COMMITTED         `phase1.md`
+                    validation, safe
+                    scope
 
   2                 TCP connect       NOT STARTED       `phase2.md`
                     scanner
@@ -748,10 +748,10 @@ link to phase reports for details.
                                             with Flask UI requirement
                                             and phase tracker.
 
-  2026-10-10   1            CLI, input      Created netscan_lite.py  15 unit tests    Pending user
-                            validation,     with argparse CLI,      passed;          approval.
-                            safe scope      input validation,       help output       No commit.
-                                            target authorization     verified;
+  2026-10-10   1            CLI, input      Created netscan_lite.py  15 unit tests    Approved on
+                            validation,     with argparse CLI,      passed;          2026-10-10;
+                            safe scope      input validation,       help output       committed as
+                                            target authorization     verified;         12d853f.
                                             policy, port/subnet      validation
                                             validation, and unit    errors tested.
                                             tests.
