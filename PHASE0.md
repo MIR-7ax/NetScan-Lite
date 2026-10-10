@@ -1,10 +1,10 @@
 # Phase 0 — Repository Reconnaissance and Project Contract
 
-- Status: IMPLEMENTED — AWAITING USER APPROVAL
+- Status: COMMITTED
 - Started: 2026-10-10
 - Completed for review: 2026-10-10
-- User approval: Pending
-- Git commit(s): Not committed
+- User approval: Approved on 2026-10-10
+- Git commit(s): 4a0e58d "docs: Phase 0 — repository reconnaissance and project contract"
 
 ## 1. Goal and agreed scope
 

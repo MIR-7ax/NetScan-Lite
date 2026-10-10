@@ -697,9 +697,9 @@ verified work changes them.
   -----------------------------------------------------------------------
   Phase             Scope             Initial status    Report
   ----------------- ----------------- ----------------- -----------------
-  0                 Repository        IMPLEMENTED —     `phase0.md`
-                    reconnaissance    AWAITING USER
-                    and project       APPROVAL
+  0                 Repository        COMMITTED         `phase0.md`
+                    reconnaissance
+                    and project
                     contract
 
   1                 CLI, input        NOT STARTED       `phase1.md`
@@ -745,10 +745,10 @@ link to phase reports for details.
   Date         Phase        Work/decision   Verification/evidence   Setback or       Approval/commit
                                                                     unresolved item
   ------------ ------------ --------------- ----------------------- ---------------- -----------------
-  2026-10-10   0            Repository      Cloned GitHub repo;     Git status,      Pending user
-                            reconnaissance  inspected Git state,    log, remote     approval before
-                            and project     read DEV.md, verified    inspected;       commit.
-                            contract        Python 3.13.5; updated    Python version
+  2026-10-10   0            Repository      Cloned GitHub repo;     Git status,      Approved on
+                            reconnaissance  inspected Git state,    log, remote      2026-10-10;
+                            and project     read DEV.md, verified    inspected;       committed as
+                            contract        Python 3.13.5; updated    Python version    4a0e58d.
                                             .gitignore to protect    verified.
                                             secrets; updated DEV.md
                                             with Flask UI requirement
