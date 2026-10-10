@@ -27,3 +27,4 @@ reports/
 .gitkeep
 package-lock.json
 .v3/
+/.freebuff

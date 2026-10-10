@@ -1,10 +1,10 @@
 # Phase 1 — Minimal CLI, Validation, and Safe Scope
 
-- Status: IMPLEMENTED — AWAITING USER APPROVAL
+- Status: COMMITTED
 - Started: 2026-10-10
 - Completed for review: 2026-10-10
-- User approval: Pending
-- Git commit(s): Not committed
+- User approval: Approved on 2026-10-10
+- Git commit(s): 12d853f "feat: Phase 1 — CLI, validation, and safe scope"
 
 ## 1. Goal and agreed scope
 
@@ -43,7 +43,7 @@
 **Target authorization (`is_authorized_target`):**
 - Accepts loopback addresses (127.0.0.0/8)
 - Accepts private IP ranges (10.0.0.0/8, 172.16.0.0/12, 192.168.0.0/16)
-- Accepts link-local addresses (169.254.0.0/16)
+- Rejects link-local addresses (169.254.0.0/16) by default
 - Rejects public/global IP addresses
 - Rejects invalid IP address formats
 
@@ -66,7 +66,7 @@
 
 **Unit tests (`test_validation.py`):**
 - 15 tests covering all validation functions
-- Tests for authorized targets (loopback, private, link-local)
+- Tests for authorized targets (loopback, private); rejected targets (public, link-local)
 - Tests for rejected targets (public IPs, invalid addresses)
 - Tests for port range validation (valid ranges, invalid formats, out-of-range ports)
 - Tests for subnet validation (valid subnets, invalid formats, size limits, public subnets)
@@ -110,7 +110,7 @@ The tool is designed for educational use on authorized lab networks only. Scanni
 The `is_authorized_target` function implements an explicit allow policy:
 - **Allow:** Loopback (for testing on your own machine)
 - **Allow:** Private ranges (for lab networks you control)
-- **Allow:** Link-local (for local network discovery)
+- **Reject:** Link-local (169.254.0.0/16) — not in the default authorized scope
 - **Reject:** Everything else (public IPs, multicast, reserved ranges)
 
 This check happens **before** any network code would run, ensuring the tool cannot accidentally scan unauthorized targets.
@@ -159,7 +159,7 @@ OK
 ```
 
 All 15 unit tests passed, validating:
-- Loopback, private, and link-local address authorization
+- Loopback and private address authorization; link-local rejected
 - Public address rejection
 - Invalid address format rejection
 - Single port and port range validation
@@ -291,7 +291,7 @@ As confirmed by the output message in all successful runs: "No network probes we
 
 ### Safety checks implemented
 
-- **Explicit target allow policy:** Only loopback, private, and link-local addresses are authorized. Public/global targets are rejected with a clear error message.
+- **Explicit target allow policy:** Only loopback and private addresses are authorized. Link-local (169.254.0.0/16), multicast, reserved, and all global/public addresses are rejected with a clear error message.
 - **Port range limits:** Maximum 1000 ports per scan to prevent resource exhaustion.
 - **Subnet size limits:** Maximum 256 addresses per subnet scan.
 - **Port bounds:** Ports must be between 1 and 65535.
@@ -310,7 +310,7 @@ As confirmed by the output message in all successful runs: "No network probes we
 The current authorization policy allows:
 - Loopback (127.0.0.0/8): For testing on the local machine
 - Private ranges (10.0.0.0/8, 172.16.0.0/12, 192.168.0.0/16): For lab networks the user controls
-- Link-local (169.254.0.0/16): For local network discovery
+- Link-local (169.254.0.0/16): Rejected by default — not in the authorized scope
 
 The policy rejects:
 - Public IP addresses (e.g., 8.8.8.8, 1.1.1.1)
@@ -353,21 +353,20 @@ This matches the user-authorized testing scope from Phase 0.
 
 ## 10. User review and approval
 
-- User approval: **Pending**
-- This report and the implementation (netscan_lite.py, tests/) are presented for the user's review.
-- No commit will be made until the user explicitly approves Phase 1.
+- User approval: **Approved on 2026-10-10.**
+- The report and the implementation (`netscan_lite.py`, `tests/`) were reviewed and approved for commit.
+- The phase was committed as 12d853f after approval.
 
 ## 11. Git workflow and commit evidence
 
-- **Not committed.** Awaiting user approval.
-- After approval, the following files will be staged:
+- **Committed as 12d853f.** The following files were staged and committed:
   - `netscan_lite.py`
   - `tests/__init__.py`
   - `tests/test_validation.py`
   - `phase1.md`
-  - `DEV.md` (to update phase tracker and development log)
-- Commit message (proposed): `feat: Phase 1 — CLI, validation, and safe scope`
-- No push to GitHub will occur without explicit user authorization.
+  - `DEV.md` (updated phase tracker and development log)
+- Commit message: `feat: Phase 1 — CLI, validation, and safe scope`
+- No push to GitHub occurred without explicit user authorization.
 
 ## 12. Revision notes and viva questions
 
@@ -375,7 +374,7 @@ This matches the user-authorized testing scope from Phase 0.
 
 - **CLI argument parsing:** Using `argparse` to parse command-line arguments and generate help messages.
 - **Input validation:** Checking user input is valid before processing (IP addresses, ports, subnets).
-- **Explicit allow policy:** Only accepting specific authorized targets and rejecting everything else by default.
+- **Explicit allow policy:** Only accepting specific authorized targets and rejecting everything else by default. Link-local is rejected by default, not automatically allowed, because it is auto-configured and not necessarily under user control.
 - **Fail fast:** Validating simple checks first (ports) before complex checks (target authorization) to provide clear error messages.
 - **Unit testing:** Testing validation logic independently without network access to prove correctness.
 - **Resource limits:** Bounding port ranges and subnet sizes to prevent accidental resource exhaustion.
@@ -388,11 +387,17 @@ A: Port validation is simpler and faster. Checking ports first allows us to fail
 **Q: What happens if someone tries to scan a public IP like 8.8.8.8?**
 A: The tool rejects it with an error message: "Target rejected - Public or unauthorized address." The authorization check happens before any network code would run, so no probes are sent.
 
+**Q: What happens for link-local addresses like 169.254.x.x?**
+A: They are rejected by default with "Link-local address not in authorized scope." Link-local is auto-configured and not necessarily under the user's control, so it is not automatically authorized; any change here must be approved and recorded.
+
 **Q: Why limit port ranges to 1000 ports?**
 A: Scanning 65,535 ports (the full range) could take hours and consume significant system resources. A 1000-port limit allows practical scans while preventing accidental excessive scans.
 
 **Q: Does Phase 1 actually scan any networks?**
 A: No. Phase 1 only validates input and configuration. It checks that the target is authorized, ports are valid, and the configuration is reasonable. No network probes are performed until Phase 2.
+
+**Q: What changed in Phase 2?**
+A: Phase 2 refactored validation/authorization into `netscan/validation.py` so the CLI and Flask app share one source of truth, implemented the TCP connect scanner with distinct open/closed/unknown results, and added the mandatory Flask dashboard with server-side authorization and validation before any probe.
 
 **Q: How do the unit tests prove the tool won't scan unauthorized targets?**
 A: The tests verify that `is_authorized_target` returns `False` for public IPs and `True` for authorized targets. Since the CLI exits with an error before any scanning code runs (which doesn't exist yet in Phase 1), we can prove rejected targets cannot trigger network probes.

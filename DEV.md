@@ -186,9 +186,8 @@ currently exists**.
     target, port, protocol, state, service hint, banner when available,
     and useful scan metadata.
 8.  **CLI:** accept a target or subnet, port range, scan modes, timeouts
-    where appropriate, and report format.
-9.  **Learning/documentation:** explain implementation, observed
-    results, limitations, and verified timing comparisons.
+    where appropriate, and report format.10. **Learning/documentation:** explain implementation, observed
+     results, limitations, and verified timing comparisons.
 
 ### 3.2 Out of scope unless explicitly approved
 
@@ -217,10 +216,8 @@ currently exists**.
 -   **CLI:** `argparse`.
 -   **Reports:** standard-library `json` and `csv`.
 -   **Host discovery:** a platform-aware system `ping` fallback may be
-    used; Scapy is optional only if approved and justified.
--   **Optional UI:** Flask, only after core functionality and with user
-    approval.
--   **Testing:** Python standard-library `unittest` or another agreed
+    used; Scapy is optional only if approved and justified.-   **Web UI:** Flask, developed incrementally alongside the scanning engine starting in Phase 2. The Phase 2 dashboard is mandatory and already committed (commit 1fa22ae).
+ -   **Testing:** Python standard-library `unittest` or another agreed
     lightweight framework.
 
 Do not add React, FastAPI, a database, Docker, or external scanning
@@ -283,10 +280,11 @@ CLI argument parsing and input validation (Phase 1: IMPLEMENTED)
   |
   v
 Per-host scan coordinator [Phase 2]
-  |
-  +--> TCP connect scanner [Phase 2]
-  |
-  +--> UDP probe scanner (if requested) [Phase 4]
+  |  +--> TCP connect scanner [Phase 2]
+   |
+   +--> Flask web dashboard (mandatory deliverable) [Phase 2]
+   |
+   +--> UDP probe scanner (if requested) [Phase 4]
   |
   +--> Service-name mapping and optional banner identification [Phase 3]
   |
@@ -296,7 +294,7 @@ Normalized scan results [Phase 3]
   +--> Console summary [Phase 3]
   +--> JSON report [Phase 3]
   +--> CSV report [Phase 3]
-  +--> Flask web dashboard (mandatory deliverable, to be built after core scanning) [Phase 7+]
+
 ```
 
 The implementation may start in one file for simplicity, then be split
@@ -431,22 +429,29 @@ tests prove rejected targets do not trigger network probes.
 
 Deliverable: `phase1.md` after implementation and verification.
 
-### Phase 2 --- TCP connect scanner
+### Phase 2 --- TCP connect scanner and Flask web dashboard
 
-**Goal:** scan a user-selected port range on an authorized lab host.
+**Goal:** scan a user-selected port range on an authorized lab host, and
+provide the mandatory Flask web dashboard for local learning use.
 
 Tasks: - Implement a bounded-timeout TCP connect check using `socket`. -
 Distinguish a successful connection from other results without
 overclaiming closed/filtered states. - Map common TCP ports to
 service-name hints. - Add bounded concurrency after a correct baseline
-exists.
+exists. - Build and commit the Flask dashboard (target input, port
+configuration, scan initiation, results display, JSON/CSV export) with
+server-side authorization and validation. - Keep the CLI working.
 
-Verification: - Test using loopback sockets with known open and closed
-ports where practical. - Test timeouts and socket cleanup. - Compare
-sequential and concurrent timing under controlled conditions if
-feasible.
+Verification: - Test TCP states: connect -> open, ECONNREFUSED -> closed,
+timeout -> unknown. - Test timeouts, socket cleanup, and bounded
+concurrency. - Test the Flask dashboard via the test client: validate
+route, scan route, static assets, dashboard HTML. - Reject out-of-scope
+targets with 403 and never create sockets for them. - Verify commit
+1fa22ae adds the dashboard UI.
 
-Deliverable: `phase2.md`.
+Deliverable: `phase2.md` and the Flask dashboard package
+(`netscan/` module with `app.py`, `tcp_scanner.py`, `validation.py`,
+and the dashboard HTML/CSS/JS), already committed.
 
 ### Phase 3 --- Result model, service/banner identification, and reports
 
@@ -530,12 +535,12 @@ does not imply unsupported capabilities.
 
 Deliverable: `phase7.md`.
 
-### Optional Phase 8 --- TCP SYN scan or minimal UI
+### Optional Phase 8 --- TCP SYN scan
 
 Only begin after the core project is complete and the user explicitly
-approves the selected extension. Treat SYN scanning and a Flask UI as
-separate scope decisions; do not bundle them automatically. Document
-platform and privilege requirements before implementation.
+approves the selected extension. Do not bundle SYN scanning with the
+Flask UI scope automatically. Document platform and privilege
+requirements before implementation.
 
 ------------------------------------------------------------------------
 
