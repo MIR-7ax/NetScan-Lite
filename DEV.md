@@ -275,61 +275,55 @@ Planned logical flow:
 User
   |
   v
-CLI argument parsing and input validation
+CLI argument parsing and input validation (Phase 1: IMPLEMENTED)
   |
-  +--> Target/subnet authorization checks
+  +--> Target/subnet authorization checks (Phase 1: IMPLEMENTED)
   |
-  +--> Host discovery (optional; only when a subnet is supplied)
-  |
-  v
-Per-host scan coordinator
-  |
-  +--> TCP connect scanner
-  |
-  +--> UDP probe scanner (if requested)
-  |
-  +--> Service-name mapping and optional banner identification
+  +--> Host discovery (optional; only when a subnet is supplied) [Phase 5]
   |
   v
-Normalized scan results
+Per-host scan coordinator [Phase 2]
   |
-  +--> Console summary
-  +--> JSON report
-  +--> CSV report
-  +--> Flask web dashboard (mandatory deliverable, to be built after core scanning)
+  +--> TCP connect scanner [Phase 2]
+  |
+  +--> UDP probe scanner (if requested) [Phase 4]
+  |
+  +--> Service-name mapping and optional banner identification [Phase 3]
+  |
+  v
+Normalized scan results [Phase 3]
+  |
+  +--> Console summary [Phase 3]
+  +--> JSON report [Phase 3]
+  +--> CSV report [Phase 3]
+  +--> Flask web dashboard (mandatory deliverable, to be built after core scanning) [Phase 7+]
 ```
 
 The implementation may start in one file for simplicity, then be split
 into modules only when the code and tests justify it. Any architectural
 change must be recorded in the decision log.
 
-### 5.1 Planned module responsibilities
+### 5.1 Actual file layout (after Phase 1)
 
-The exact file layout is not yet implemented and should be created
-incrementally. A possible layout after the initial phase is:
+The following files have been created:
 
 ``` text
 NetScan-Lite/
 ├── DEV.md
+├── phase0.md
 ├── phase1.md
-├── phase2.md
-├── ...                    # one report per completed phase
-├── netscan_lite.py        # CLI entry point, if a single-file design remains suitable
-├── netscan/               # optional package if separation becomes useful
-│   ├── __init__.py
-│   ├── discovery.py
-│   ├── tcp_scanner.py
-│   ├── udp_scanner.py
-│   ├── services.py
-│   └── reporting.py
+├── README.md
+├── .gitignore
+├── netscan_lite.py        # CLI entry point with argparse, validation, and authorization
 ├── tests/
-├── reports/               # generated local scan evidence; commit only approved, safe samples
-└── README.md              # user-facing overview and run instructions
+│   ├── __init__.py
+│   └── test_validation.py # Unit tests for validation and authorization logic
+└── reports/               # created when needed for scan evidence
 ```
 
-Do not create all these files in advance just to match this diagram.
-Choose a small, testable structure and update this section to reflect
-the actual implementation.
+The implementation uses a single-file design (`netscan_lite.py`) for Phase 1.
+If the code grows complex in later phases, it may be split into modules
+(e.g., `netscan/` package) as justified by the implementation.
 
 ### 5.2 Normalized result model
 
@@ -702,9 +696,9 @@ verified work changes them.
                     and project
                     contract
 
-  1                 CLI, input        NOT STARTED       `phase1.md`
-                    validation, safe
-                    scope
+  1                 CLI, input        IMPLEMENTED —     `phase1.md`
+                    validation, safe  AWAITING USER
+                    scope             APPROVAL
 
   2                 TCP connect       NOT STARTED       `phase2.md`
                     scanner
@@ -754,15 +748,23 @@ link to phase reports for details.
                                             with Flask UI requirement
                                             and phase tracker.
 
+  2026-10-10   1            CLI, input      Created netscan_lite.py  15 unit tests    Pending user
+                            validation,     with argparse CLI,      passed;          approval.
+                            safe scope      input validation,       help output       No commit.
+                                            target authorization     verified;
+                                            policy, port/subnet      validation
+                                            validation, and unit    errors tested.
+                                            tests.
+
   2026-10-10   Project      Defined         Specification           Repository       No phase approval
                definition   NetScan-Lite    documented;             state, Python    or commit
                             scope, learning implementation not yet  environment, Git recorded.
-                            goals, safety   verified.               branch/remote,   
-                            boundary, phase                         and existing     
-                            plan, report                            files must be    
-                            and approval                            inspected by the 
-                            workflow in                             agent before     
-                            `DEV.md`.                               coding.          
+                            goals, safety   verified.               branch/remote,
+                            boundary, phase                         and existing
+                            plan, report                            files must be
+                            and approval                            inspected by the
+                            workflow in                             agent before
+                            `DEV.md`.                               coding.
 
   ----------------------------------------------------------------------------------------------------
 
@@ -810,6 +812,28 @@ choices.
                     (not optional)      final app must     Flask dashboard.
                                          include a Flask
                                          web dashboard.
+
+  2026-10-10        Validate ports       Port validation    Fail fast on
+                    before targets       is simpler and      malformed input
+                                         faster; fail fast   before complex
+                                         on malformed       IP validation.
+                                         input.
+
+  2026-10-10        Limit port ranges    Prevent accidental  Bounded resource
+                    to 1000 ports        resource            usage for all
+                                         exhaustion while    scans.
+                                         allowing practical
+                                         ranges.
+
+  2026-10-10        Restrict subnets     /24 or smaller      Prevents
+                    to ≤256 addresses    subnets are         excessive subnet
+                                         reasonable for      scans.
+                                         lab use.
+
+  2026-10-10        Use Python's         Standard library    Robust IP
+                    ipaddress module     provides robust     validation and
+                    for validation       IP validation and   classification.
+                                         classification.
   -----------------------------------------------------------------------------
 
 ------------------------------------------------------------------------
