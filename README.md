@@ -1,0 +1,3 @@
+Network tools such as Nmap automate host discovery, port scanning, and service identification. NetScan-Lite implements a deliberately smaller version in Python so the student can understand what happens underneath the tool rather than simply invoking Nmap.
+
+The core learning goal is to demonstrate TCP/IP, ports, sockets, TCP connection establishment, UDP's connectionless behavior, ICMP-based discovery, concurrent network I/O, and structured scan reports.
