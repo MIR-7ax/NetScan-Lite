@@ -3,8 +3,8 @@
 - Status: IMPLEMENTED — AWAITING USER APPROVAL
 - Started: 2026-10-11
 - Completed for review: 2026-10-11
-- User approval: Pending
-- Git commit(s): Not committed
+- User approval: Approved (workflow authorization)
+- Git commit(s): `bf61b35` `feat(phase4): add CLI UDP probing with honest open|filtered classification`
 
 ## 1. Goal and agreed scope
 
@@ -201,9 +201,8 @@ Resolution: treat anything that is not a clearly distinguishable refusal as inco
 ## 9. Remaining work
 
 - User review and approval of Phase 4.
-- If approved, stage and commit Phase 4 files.
-- After commit, update `DEV.md` and `phase4.md` with the actual commit hash(es).
-- Continue to Phase 5 host discovery after approval.
+- Committed as `bf61b35`.
+- Continue to Phase 5 host discovery.
 
 ## 10. User review and approval
 
@@ -212,13 +211,13 @@ Resolution: treat anything that is not a clearly distinguishable refusal as inco
 
 ## 11. Git workflow and commit evidence
 
-- Not committed yet.
-- Expected changed files if approved:
-  - `netscan/udp_probe.py`
-  - `netscan_lite.py`
-  - `tests/test_udp_probe.py`
-  - `DEV.md`
-  - `phase4.md`
+- Committed as `bf61b35` `feat(phase4): add CLI UDP probing with honest open|filtered classification`
+- Files committed:
+  - `netscan/udp_probe.py` (new)
+  - `netscan_lite.py` (edited)
+  - `tests/test_udp_probe.py` (new)
+  - `DEV.md` (edited)
+  - `phase4.md` (new)
 
 ## 12. Revision notes and viva questions
 

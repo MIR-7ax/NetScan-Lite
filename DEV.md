@@ -713,7 +713,7 @@ verified work changes them.
                     identification,                                    committed)
                     JSON/CSV
 
-  4                 UDP probing       IN PROGRESS        `phase4.md` (draft in working tree; not committed)
+  4                 UDP probing       COMMITTED          `phase4.md` (commit bf61b35)
 
   5                 Host discovery    NOT STARTED       `phase5.md`
 
@@ -776,18 +776,17 @@ link to phase reports for details.
                                             best-effort (empty is     browser review
                                             normal). CLI now returns   performed.
                                             exit code so callers can
-                                            test success/failure.
+                                            test success/failure.  2026-10-11   4            UDP probing    Created netscan/udp_probe.py   103 unit tests   Approved;
+                           (CLI only; Flask   with probe_udp, scan_udp,     pass (Phase 1 +   committed as
+                           stays TCP-only)    and CLI --mode udp path in     Phase 2 + Phase   bf61b35.
+                                               netscan_lite.py; added         3 + Phase 4       Flask dashboard
+                                               tests/test_udp_probe.py.       subsets); added   intentionally kept
+                                               UDP silence classified as       UDP honesty,       TCP-only.
+                                               open|filtered, not open.       shape, and
+                                               CLI UDP smoke tests             response tests
+                                               verified; Flask dashboard      passed.
+                                               intentionally kept TCP-only.
 
-  2026-10-11   4            UDP probing    Created netscan/udp_probe.py   103 unit tests   Pending user
-                            (CLI only; Flask   with probe_udp, scan_udp,     pass (Phase 1 +   review before
-                            stays TCP-only)    and CLI --mode udp path in     Phase 2 + Phase   committing
-                                                netscan_lite.py; added         3 + Phase 4       Phase 4.
-                                                tests/test_udp_probe.py.       subsets); added
-                                                UDP silence classified as       UDP honesty,
-                                                open|filtered, not open.       shape, and
-                                                CLI UDP smoke tests
-                                                verified; Flask dashboard
-                                                intentionally kept TCP-only.
 
   2026-10-10   Project      Defined         Specification           Repository       No phase approval
                definition   NetScan-Lite    documented;             state, Python    or commit
