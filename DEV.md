@@ -713,7 +713,7 @@ verified work changes them.
                     identification,                                    committed)
                     JSON/CSV
 
-  4                 UDP probing       NOT STARTED       `phase4.md`
+  4                 UDP probing       IN PROGRESS        `phase4.md` (draft in working tree; not committed)
 
   5                 Host discovery    NOT STARTED       `phase5.md`
 
@@ -778,6 +778,17 @@ link to phase reports for details.
                                             exit code so callers can
                                             test success/failure.
 
+  2026-10-11   4            UDP probing    Created netscan/udp_probe.py   103 unit tests   Pending user
+                            (CLI only; Flask   with probe_udp, scan_udp,     pass (Phase 1 +   review before
+                            stays TCP-only)    and CLI --mode udp path in     Phase 2 + Phase   committing
+                                                netscan_lite.py; added         3 + Phase 4       Phase 4.
+                                                tests/test_udp_probe.py.       subsets); added
+                                                UDP silence classified as       UDP honesty,
+                                                open|filtered, not open.       shape, and
+                                                CLI UDP smoke tests
+                                                verified; Flask dashboard
+                                                intentionally kept TCP-only.
+
   2026-10-10   Project      Defined         Specification           Repository       No phase approval
                definition   NetScan-Lite    documented;             state, Python    or commit
                             scope, learning implementation not yet  environment, Git recorded.
@@ -818,6 +829,13 @@ choices.
                                          export buttons added
                                          under existing UI.
 
+  2026-10-11        UDP probing (CLI     Added UDP probe     103 unit tests pass   UDP silence is
+                    only; Flask stays    module and CLI       (Phase 1 + 2 + 3 +   inherently
+                    TCP-only)            --mode udp support   Phase 4); UDP probe   ambiguous; only
+                                        in netscan_lite.py;  honesty and shape     a response proves
+                                        Flask intentionally   verified; Flask        open.
+                                        kept TCP-only.       dashboard stays
+                                                           TCP-only for now.
   2026-10-10        Use TCP connect      Connect scanning  SYN scanning
                     scanning as the      is easier to      requires a separate
                     required TCP method; explain and       explicit scope

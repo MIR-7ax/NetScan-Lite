@@ -82,9 +82,9 @@ Public/global targets and link-local addresses are rejected by default.
     )
     parser.add_argument(
         "--mode",
-        choices=["tcp"],
+        choices=["tcp", "udp"],
         default="tcp",
-        help="Scan mode (only tcp is implemented)",
+        help="Scan mode (tcp or udp)",
     )
     parser.add_argument(
         "--output",
@@ -327,12 +327,62 @@ def main(argv=None):
                 sys.stdout.write("\n")
 
     elif args.mode == "udp":
-        print(
-            "UDP scanning is not implemented in this build.\n"
-            "NetScan-Lite currently supports TCP connect scanning only.\n"
-            "Use --mode tcp, or omit --mode (the default), to scan with TCP."
-        )
-        return 1
+        from netscan.udp_probe import scan_udp
+
+        start_time = datetime.now(timezone.utc)
+        try:
+            results = scan_udp(target, ports, timeout=args.timeout)
+        except ValueError as e:
+            print(f"Error: {e}")
+            return 1
+        end_time = datetime.now(timezone.utc)
+        elapsed = (end_time - start_time).total_seconds()
+
+        normalized = normalize_results(target, results, protocol="udp")
+
+        if args.output in ("console", "all"):
+            print_console_report(target, normalized, elapsed)
+
+        metadata = {
+            "scan_start": start_time.isoformat(),
+            "scan_end": end_time.isoformat(),
+            "elapsed_seconds": elapsed,
+            "timeout": args.timeout,
+            "ports_scanned": len(ports),
+            "target": target,
+            "mode": args.mode,
+        }
+
+        json_path = None
+        csv_path = None
+        if args.output_file:
+            base = args.output_file
+            if base.endswith((".json", ".csv")):
+                base = base.rsplit(".", 1)[0]
+            json_path = f"{base}.json"
+            csv_path = f"{base}.csv"
+
+        if args.output in ("json", "all"):
+            path = json_path or args.output_file
+            if path:
+                write_json_report(normalized, path, metadata)
+            else:
+                report = {
+                    "metadata": metadata,
+                    "results": normalized,
+                }
+                json.dump(report, sys.stdout, indent=2, default=str)
+                sys.stdout.write("\n")
+
+        if args.output in ("csv", "all"):
+            path = csv_path or args.output_file
+            if path:
+                write_csv_report(normalized, path, metadata)
+            else:
+                output = io.StringIO()
+                write_csv_report_to_writer(normalized, output, metadata)
+                sys.stdout.write(output.getvalue())
+                sys.stdout.write("\n")
     else:
         print(f"Error: Unknown scan mode '{args.mode}'")
         return 1
