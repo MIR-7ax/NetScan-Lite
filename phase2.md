@@ -1,13 +1,12 @@
 # Phase 2 — TCP connect scanner and Flask web dashboard
 
-- Status: IMPLEMENTED — AWAITING USER APPROVAL
+- Status: COMMITTED
 - Started: 2026-10-10
 - Completed for review: 2026-10-10
-- User approval: Not requested yet
+- User approval: Approved on 2026-10-10
 - Git commit(s):
+    - `1252676` `feat(phase2): TCP connect scanner and Flask dashboard with server-side auth`
     - `1fa22ae` `ui(phase2): improve dashboard layout, results summary, and export placement`
-      (dashboard UI: dashboard.html, static/styles.css, static/app.js — committed separately)
-    - Pending: scanner, Flask app, validation, tests, and this report
 
 ## 1. Goal and agreed scope
 
@@ -286,13 +285,44 @@ Resolution: the summary now reflects the actual port list, and the ordering rema
 
 ## 10. User review and approval
 
-- User approval: Awaiting explicit approval to commit Phase 2 code changes.
-- Phase 2 UI improvements have been reviewed and committed (commit 1fa22ae).
-- The remaining Phase 2 implementation changes are still uncommitted and awaiting user approval before staging.
+- User approval: **Approved on 2026-10-10.**
+- Phase 2 implementation committed as `1252676` on 2026-10-10.
+- Phase 2 UI improvements committed as `1fa22ae` on 2026-10-10.
 
 ## 11. Git workflow and commit evidence
 
-- Not committed.
+### Commit 1
+
+- **Hash:** `1252676`
+- **Message:** `feat(phase2): TCP connect scanner and Flask dashboard with server-side auth`
+- **Files:** 11 files changed (1289 insertions, 205 deletions)
+  - `netscan/__init__.py` (new)
+  - `netscan/app.py` (new)
+  - `netscan/tcp_scanner.py` (new)
+  - `netscan/validation.py` (new)
+  - `phase2.md` (new)
+  - `tests/test_tcp_scanner.py` (new)
+  - `tests/test_validation_api.py` (new)
+  - `.gitignore` (modified)
+  - `DEV.md` (modified)
+  - `netscan_lite.py` (modified)
+  - `phase1.md` (modified)
+
+### Commit 2
+
+- **Hash:** `1fa22ae`
+- **Message:** `ui(phase2): improve dashboard layout, results summary, and export placement`
+- **Files:** 3 files changed (381 insertions)
+  - `netscan/templates/dashboard.html` (new)
+  - `netscan/static/styles.css` (new)
+  - `netscan/static/app.js` (new)
+
+### Verification
+
+- `git status --short --branch`: `## main...origin/main [ahead 6]`
+- `git diff --check`: No issues (only CRLF warnings)
+- `py -m unittest discover -s tests`: Ran 64 tests, OK
+- CLI smoke tests: help, console, JSON, CSV, rejected target all working
 - Awaiting explicit user approval before staging.
 - After approval, the likely files to stage are:
   - `netscan/validation.py`

@@ -1,6 +1,5 @@
 #!/usr/bin/env python3
-"""
-NetScan-Lite: Custom TCP/UDP Port Scanner & Network Mapper
+"""NetScan-Lite: Custom TCP/UDP Port Scanner & Network Mapper
 
 A minimal network scanner for educational purposes, demonstrating TCP/IP,
 sockets, TCP connection establishment, UDP's connectionless behavior, and
@@ -12,7 +11,11 @@ Re-exports the canonical validation/authorization helpers so existing code
 and tests that imported from netscan_lite continue to work.
 """
 import argparse
+import csv
+import io
+import json
 import sys
+from datetime import datetime, timezone
 
 from netscan.tcp_scanner import scan_ports
 from netscan.validation import (
@@ -31,7 +34,7 @@ __all__ = [
 ]
 
 
-def parse_arguments():
+def parse_arguments(argv=None):
     """Parse command-line arguments.
 
     Returns:
@@ -59,124 +62,281 @@ Public/global targets and link-local addresses are rejected by default.
     target_group = parser.add_mutually_exclusive_group(required=True)
     target_group.add_argument(
         "--target",
-        type=str,
-        help="Single target IP address to scan",
+        help="Target IP address to scan (e.g., 127.0.0.1)",
     )
     target_group.add_argument(
         "--subnet",
-        type=str,
-        help="Subnet in CIDR notation (e.g., 192.168.1.0/24)",
+        help="Subnet to scan in CIDR notation (e.g., 192.168.1.0/24)",
     )
 
     parser.add_argument(
         "--ports",
-        type=str,
         required=True,
-        help='Port range (e.g., 1-100) or comma-separated ports (e.g., 22,80,443)',
+        help="Port range to scan (e.g., 1-100 or 22,80,443)",
     )
-
-    parser.add_argument(
-        "--mode",
-        type=str,
-        choices=["tcp", "udp"],
-        default="tcp",
-        help="Scan mode: tcp (default) or udp",
-    )
-
-    parser.add_argument(
-        "--output",
-        type=str,
-        choices=["json", "csv"],
-        help="Output format for scan results",
-    )
-
     parser.add_argument(
         "--timeout",
         type=float,
         default=1.0,
         help="Connection timeout in seconds (default: 1.0)",
     )
+    parser.add_argument(
+        "--mode",
+        choices=["tcp"],
+        default="tcp",
+        help="Scan mode (only tcp is implemented)",
+    )
+    parser.add_argument(
+        "--output",
+        choices=["console", "json", "csv", "all"],
+        default="console",
+        help="Output format (default: console)",
+    )
+    parser.add_argument(
+        "--output-file",
+        help="Output file path for JSON/CSV reports",
+    )
 
-    return parser.parse_args()
+    return parser.parse_args(argv)
 
 
-def main():
-    """Main entry point for the CLI."""
-    args = parse_arguments()
+def normalize_results(target: str, results: list[dict], protocol: str = "tcp") -> list[dict]:
+    """Normalize scan results into a stable shape.
 
-    # Validate ports first (fast, simple)
-    try:
-        port_list = parse_port_spec(args.ports)
-        port_count = len(port_list)
-        if args.ports and "," in args.ports:
-            port_summary = f"{port_count} ports"
-        else:
-            if port_count == 1:
-                port_summary = f"{port_list[0]} ({port_count} port)"
+    Each result will have: target, port, protocol, state, service, banner, error.
+    """
+    normalized = []
+    for r in results:
+        normalized.append({
+            "target": target,
+            "port": r["port"],
+            "protocol": protocol,
+            "state": r["state"],
+            "service": r.get("service", "unknown"),
+            "banner": r.get("banner", ""),
+            "error": r.get("error"),
+        })
+    return normalized
+
+
+def print_console_report(target: str, results: list[dict], elapsed: float) -> None:
+    """Print a human-readable scan report to stdout."""
+    if elapsed is not None:
+        print(f"\nScan completed in {elapsed:.2f} seconds")
+    print(f"\n{'='*60}")
+    print(f"NetScan-Lite Scan Report")
+    print(f"{'='*60}")
+    print(f"Target: {target}")
+    print(f"Scanned: {len(results)} ports")
+    print(f"{'='*60}")
+
+    if not results:
+        print("No ports scanned or no results returned.")
+        return
+
+    # Group by state
+    by_state = {}
+    for r in results:
+        state = r["state"]
+        if state not in by_state:
+            by_state[state] = []
+        by_state[state].append(r)
+
+    for state in sorted(by_state.keys()):
+        ports = by_state[state]
+        print(f"\n{state.upper()} ({len(ports)} port{'s' if len(ports) != 1 else ''}):")
+        for r in sorted(ports, key=lambda x: x["port"]):
+            service = r.get("service", "unknown")
+            banner = r.get("banner", "")
+            if banner:
+                print(f"  Port {r['port']:>5}/tcp  {service:<12} {banner[:50]}")
             else:
-                port_summary = f"{port_list[0]}-{port_list[-1]} ({port_count} ports)"
-    except ValueError as e:
-        print(f"Error: {e}", file=sys.stderr)
-        sys.exit(1)
+                print(f"  Port {r['port']:>5}/tcp  {service:<12}")
 
-    # Validate target or subnet
-    if args.target:
-        authorized, reason = is_authorized_target(args.target)
+    print(f"\n{'='*60}")
+    print(f"Scan completed: {datetime.now(timezone.utc).strftime('%Y-%m-%d %H:%M:%S UTC')}")
+    print(f"{'='*60}\n")
+
+
+def write_json_report(results: list[dict], output_path: str, metadata: dict) -> None:
+    """Write scan results to a JSON file."""
+    report = {
+        "metadata": metadata,
+        "results": results,
+    }
+    with open(output_path, "w", encoding="utf-8") as f:
+        json.dump(report, f, indent=2, default=str)
+    print(f"JSON report written to: {output_path}")
+
+
+def write_csv_report(results: list[dict], output_path: str, metadata: dict) -> None:
+    """Write scan results to a CSV file."""
+    with open(output_path, "w", newline="", encoding="utf-8") as f:
+        write_csv_report_to_writer(results, f, metadata)
+    print(f"CSV report written to: {output_path}")
+
+
+def write_csv_report_to_writer(
+    results: list[dict], output_file, metadata: dict
+) -> None:
+    """Write scan results to a CSV writer (file or StringIO)."""
+    fieldnames = [
+        "target",
+        "port",
+        "protocol",
+        "state",
+        "service",
+        "banner",
+        "error",
+        "scan_start",
+        "scan_end",
+        "elapsed_seconds",
+        "timeout",
+        "ports_scanned",
+        "mode",
+    ]
+    writer = csv.DictWriter(output_file, fieldnames=fieldnames, extrasaction='ignore')
+    writer.writeheader()
+    for r in results:
+        row = {**r, **metadata}
+        writer.writerow(row)
+
+
+
+
+def banner_grab_tcp(target: str, port: int, timeout: float) -> str:
+    """Attempt to grab a banner from a TCP service.
+
+    Returns the banner string if received, empty string otherwise.
+    This is a best-effort operation; many services do not send banners
+    without a proper application-layer request.
+    """
+    import socket as sock_module
+
+    sock = sock_module.socket(sock_module.AF_INET, sock_module.SOCK_STREAM)
+    sock.settimeout(timeout)
+    try:
+        sock.connect((target, port))
+        # Try to receive any banner the service sends
+        try:
+            banner = sock.recv(1024)
+            if banner:
+                return banner.decode("utf-8", errors="replace").strip()
+        except (sock_module.timeout, sock_module.error):
+            pass
+        return ""
+    except (sock_module.timeout, sock_module.error, ConnectionRefusedError, OSError):
+        return ""
+    finally:
+        try:
+            sock.close()
+        except OSError:
+            pass
+
+
+def main(argv=None):
+    """Main entry point for the CLI.
+
+    If argv is provided, parse that instead of sys.argv so tests can drive
+    the CLI without touching process arguments.
+
+    Returns the process exit code so callers (including tests) can inspect
+    success/failure without calling sys.exit() themselves.
+    """
+    args = parse_arguments(argv=argv)
+
+    # Validate target
+    target = args.target
+    if target:
+        authorized, reason = is_authorized_target(target)
         if not authorized:
-            print(f"Error: Target rejected - {reason}", file=sys.stderr)
-            print("Only loopback and private IP addresses are authorized.", file=sys.stderr)
-            sys.exit(1)
-        print(f"Target authorized: {args.target} ({reason})")
-    elif args.subnet:
-        try:
-            validate_subnet(args.subnet)
-            print(f"Subnet authorized: {args.subnet}")
-        except ValueError as e:
-            print(f"Error: {e}", file=sys.stderr)
-            sys.exit(1)
+            print(f"Error: Target rejected - {reason}")
+            print("Only loopback and private IP addresses are authorized for scanning.")
+            return 1
 
-    print(f"Ports to scan: {port_summary}")
-    print(f"Scan mode: {args.mode}")
-    print(f"Timeout: {args.timeout}s")
+    # Validate and parse ports
+    try:
+        ports = parse_port_spec(args.ports)
+    except ValueError as e:
+        print(f"Error: Invalid port specification: {e}")
+        return 1
 
-    if args.output:
-        print(f"Output format: {args.output}")
+    if args.timeout <= 0:
+        print("Error: Timeout must be positive")
+        return 1
 
+    # Perform TCP scan
     if args.mode == "tcp":
-        print("\nPerforming TCP connect scan\u2026")
+        start_time = datetime.now(timezone.utc)
         try:
-            timeout_f = float(args.timeout)
-        except (TypeError, ValueError):
-            print("Error: Invalid timeout value", file=sys.stderr)
-            sys.exit(1)
-        try:
-            results = scan_ports(args.target, port_list, timeout=timeout_f)
+            results = scan_ports(target, ports, timeout=args.timeout)
         except ValueError as e:
-            print(f"Error: {e}", file=sys.stderr)
-            sys.exit(1)
+            print(f"Error: {e}")
+            return 1
+        end_time = datetime.now(timezone.utc)
+        elapsed = (end_time - start_time).total_seconds()
 
-        open_count = sum(1 for r in results if r["state"] == "open")
-        if open_count:
-            print(f"Open ports: {open_count}")
-        else:
-            print("No open TCP ports found in this range.")
+        # Normalize results for consistent output
+        normalized = normalize_results(target, results, protocol="tcp")
 
-        if args.output == "json":
-            import json
+        # Output based on format choice
+        if args.output in ("console", "all"):
+            print_console_report(target, normalized, elapsed)
 
-            print(f"\nRaw JSON scan results:\n{json.dumps(results, indent=2)}")
-        elif args.output == "csv":
-            print("\nCSV scan results:")
-            print("port,state,service,error")
-            for r in results:
-                print(f'{r["port"]},{r["state"]},{r["service"]},"{r["error"]}"')
+        # Single metadata dict for all report formats
+        metadata = {
+            "scan_start": start_time.isoformat(),
+            "scan_end": end_time.isoformat(),
+            "elapsed_seconds": elapsed,
+            "timeout": args.timeout,
+            "ports_scanned": len(ports),
+            "target": target,
+            "mode": args.mode,
+        }
 
-        print(f"\nTotal ports scanned: {len(results)}")
+        # Determine output file paths (different extensions for each format)
+        json_path = None
+        csv_path = None
+        if args.output_file:
+            base = args.output_file
+            if base.endswith((".json", ".csv")):
+                base = base.rsplit(".", 1)[0]
+            json_path = f"{base}.json"
+            csv_path = f"{base}.csv"
+
+        if args.output in ("json", "all"):
+            path = json_path or args.output_file
+            if path:
+                write_json_report(normalized, path, metadata)
+            else:
+                report = {
+                    "metadata": metadata,
+                    "results": normalized,
+                }
+                json.dump(report, sys.stdout, indent=2, default=str)
+                sys.stdout.write("\n")
+
+        if args.output in ("csv", "all"):
+            path = csv_path or args.output_file
+            if path:
+                write_csv_report(normalized, path, metadata)
+            else:
+                output = io.StringIO()
+                write_csv_report_to_writer(normalized, output, metadata)
+                sys.stdout.write(output.getvalue())
+                sys.stdout.write("\n")
+
+    elif args.mode == "udp":
+        print(
+            "UDP scanning is not implemented in this build.\n"
+            "NetScan-Lite currently supports TCP connect scanning only.\n"
+            "Use --mode tcp, or omit --mode (the default), to scan with TCP."
+        )
+        return 1
     else:
-        print(f"\n{args.mode.upper()} mode selected.")
-        print("Network probing for this mode is not yet implemented in Phase 2.")
-        print("Submit an authorized loopback/private target to proceed.")
+        print(f"Error: Unknown scan mode '{args.mode}'")
+        return 1
 
 
 if __name__ == "__main__":
-    main()
+    raise SystemExit(main())

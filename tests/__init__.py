@@ -1,1 +1,1 @@
-"""Unit tests for NetScan-Lite."""
+# tests package

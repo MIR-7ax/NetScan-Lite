@@ -15,6 +15,8 @@
   var raw = document.getElementById("results-raw");
   var exportJson = document.getElementById("export-json");
   var exportCsv = document.getElementById("export-csv");
+  var exportJsonPhase3 = null;
+  var exportCsvPhase3 = null;
 
   function setNotice(msg, kind){
     scanNotice.textContent = msg || "";
@@ -196,6 +198,116 @@
     document.body.removeChild(a);
     URL.revokeObjectURL(url);
   });
+
+  function downloadBlob(body, filename, mime){
+    var blob = new Blob([body], {type: mime});
+    var url = URL.createObjectURL(blob);
+    var a = document.createElement("a");
+    a.href = url;
+    a.download = filename;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  }
+
+  function phase3ExportJson(){
+    var data = JSON.parse(raw.textContent);
+    var exportPayload = {
+      target: data.target || (data.target && data.target.value) || "",
+      timeout: data.timeout || "",
+      mode: data.mode || "tcp",
+      results: data.results || [],
+      normalized_results: data.normalized_results || buildNormalized(data),
+      metadata: data.metadata || {}
+    };
+    if(!exportPayload.metadata.scan_start && data.results && data.results.length){
+      exportPayload.metadata.scan_start = exportPayload.metadata.scan_start || "";
+      exportPayload.metadata.scan_end = exportPayload.metadata.scan_end || "";
+      exportPayload.metadata.elapsed_seconds = exportPayload.metadata.elapsed_seconds || 0;
+      exportPayload.metadata.timeout = exportPayload.metadata.timeout || data.timeout || "";
+      exportPayload.metadata.ports_scanned = exportPayload.metadata.ports_scanned || (data.results||[]).length;
+      exportPayload.metadata.target = exportPayload.metadata.target || exportPayload.target;
+      exportPayload.metadata.mode = exportPayload.metadata.mode || "tcp";
+    }
+    downloadBlob(JSON.stringify(exportPayload, null, 2), "netscan-structured.json", "application/json");
+  }
+
+  function normalizeOrResults(data){
+    if(data.normalized_results && data.normalized_results.length){
+      return data.normalized_results;
+    }
+    var src = data.results || [];
+    var out = [];
+    var target = (data.target && data.target.value) ? data.target.value : (data.target || "");
+    src.forEach(function(r){
+      out.push(Object.assign({target: target, port: r.port, protocol: "tcp", state: r.state, service: r.service, banner: "", error: r.error || null}));
+    });
+    return out;
+  }
+
+  function buildNormalized(data){
+    if(data.normalized_results && data.normalized_results.length){
+      return data.normalized_results;
+    }
+    var src = data.results || [];
+    var out = [];
+    src.forEach(function(r){
+      out.push(Object.assign({target: target, port: r.port, protocol: "tcp", state: r.state, service: r.service, banner: "", error: r.error || null}));
+    });
+    return out;
+  }
+
+  function phase3ExportJson(){
+    var data = JSON.parse(raw.textContent);
+    var normalized = normalizeOrResults(data);
+    var meta = data.metadata || {};
+    if(!meta.scan_start && normalized.length){
+      meta.scan_start = meta.scan_start || "";
+      meta.scan_end = meta.scan_end || "";
+      meta.elapsed_seconds = meta.elapsed_seconds || 0;
+      meta.timeout = meta.timeout || data.timeout || "";
+      meta.ports_scanned = meta.ports_scanned || normalized.length;
+      meta.target = meta.target || (data.target && data.target.value) || data.target || "";
+      meta.mode = meta.mode || "tcp";
+    }
+    var exportPayload = {
+      target: data.target || (data.target && data.target.value) || "",
+      timeout: data.timeout || "",
+      mode: data.mode || "tcp",
+      results: data.results || [],
+      normalized_results: normalized,
+      metadata: meta
+    };
+    downloadBlob(JSON.stringify(exportPayload, null, 2), "netscan-structured.json", "application/json");
+  }
+
+  function phase3ExportCsv(){
+    var data = JSON.parse(raw.textContent);
+    var normalized = normalizeOrResults(data);
+    var meta = data.metadata || {};
+    var fieldnames = ["target","port","protocol","state","service","banner","error","scan_start","scan_end","elapsed_seconds","timeout","ports_scanned","mode"];
+    var csv = fieldnames.join(",") + "\r\n";
+    normalized.forEach(function(row, i){
+      var cells = fieldnames.map(function(name){
+        var v = (row && row[name] !== undefined) ? row[name] : (i === 0 && meta[name] !== undefined ? meta[name] : "");
+        if(v === null || v === undefined) v = "";
+        var s = String(v);
+        return '"' + s.replace(/"/g,'""') + '"';
+      });
+      csv += cells.join(",") + "\r\n";
+    });
+    downloadBlob("\uFEFF" + csv, "netscan-structured.csv", "text/csv");
+  }
+
+  exportJsonPhase3 = document.getElementById("export-phase3-json");
+  exportCsvPhase3 = document.getElementById("export-phase3-csv");
+  if(exportJsonPhase3){
+    exportJsonPhase3.addEventListener("click", phase3ExportJson);
+  }
+  if(exportCsvPhase3){
+    exportCsvPhase3.addEventListener("click", phase3ExportCsv);
+  }
 
   resetForm();
 })();

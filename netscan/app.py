@@ -5,6 +5,8 @@ request is validated server-side before any network probe is initiated.
 """
 import logging
 
+from datetime import datetime, timezone
+
 from flask import Flask, jsonify, render_template, request
 from netscan.tcp_scanner import scan_ports
 from netscan.validation import (
@@ -12,6 +14,8 @@ from netscan.validation import (
     parse_port_spec,
     validate_subnet,
 )
+from netscan_lite import normalize_results
+
 
 app = Flask(__name__)
 
@@ -77,6 +81,81 @@ def api_scan():
                 "timeout": timeout_f,
                 "mode": "tcp",
                 "results": results,
+            }
+        )
+
+    except Exception as e:
+        logger.exception("Unexpected scan error")
+        return jsonify({"error": "Internal server error"}), 500
+
+
+@app.route("/api/scan/export", methods=["POST"])
+def api_scan_export():
+    """Return a structured Phase 3 payload for the current scan result.
+
+    This preserves the existing dashboard contract (target, timeout, mode,
+    results) and adds normalized results, TCP banners where available, and
+    scan metadata. The dashboard JS already renders the 'results' array; the
+    extra keys are used by the JSON/CSV export buttons.
+    """
+    try:
+        data = request.get_json(silent=True)
+        if not data:
+            return jsonify({"error": "No JSON data provided"}), 400
+
+        target = data.get("target")
+        ports_str = data.get("ports")
+        timeout = data.get("timeout", 1.0)
+
+        if not target:
+            return jsonify({"error": "Target is required"}), 400
+        if not ports_str:
+            return jsonify({"error": "Ports are required"}), 400
+
+        authorized, reason = is_authorized_target(target)
+        if not authorized:
+            return jsonify({"error": f"Target rejected - {reason}"}), 403
+
+        try:
+            port_list = parse_port_spec(ports_str)
+        except ValueError as e:
+            return jsonify({"error": str(e)}), 400
+
+        if len(port_list) > 1000:
+            return jsonify({"error": "Port range too large (max 1000 ports)"}), 400
+
+        try:
+            timeout_f = float(timeout)
+        except (TypeError, ValueError):
+            return jsonify({"error": "Invalid timeout value"}), 400
+
+        if timeout_f <= 0:
+            return jsonify({"error": "Timeout must be > 0"}), 400
+
+        scan_start = datetime.now(timezone.utc)
+        results = scan_ports(target, port_list, timeout=timeout_f)
+        scan_end = datetime.now(timezone.utc)
+
+        normalized = normalize_results(target, results, protocol="tcp")
+
+        metadata = {
+            "scan_start": scan_start.isoformat(),
+            "scan_end": scan_end.isoformat(),
+            "elapsed_seconds": (scan_end - scan_start).total_seconds(),
+            "timeout": timeout_f,
+            "ports_scanned": len(port_list),
+            "target": target,
+            "mode": "tcp",
+        }
+
+        return jsonify(
+            {
+                "target": target,
+                "timeout": timeout_f,
+                "mode": "tcp",
+                "results": results,
+                "normalized_results": normalized,
+                "metadata": metadata,
             }
         )
 

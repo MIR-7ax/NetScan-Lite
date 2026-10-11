@@ -708,9 +708,9 @@ verified work changes them.
   2                 TCP connect       NOT STARTED       `phase2.md`
                     scanner
 
-  3                 Result model,     NOT STARTED       `phase3.md`
-                    banner
-                    identification,
+  3                 Result model,     IN PROGRESS        `phase3.md` (draft in
+                    banner             progress)           working tree; not
+                    identification,                                    committed)
                     JSON/CSV
 
   4                 UDP probing       NOT STARTED       `phase4.md`
@@ -761,6 +761,23 @@ link to phase reports for details.
                                             validation, and unit    errors tested.
                                             tests.
 
+  2026-10-11   3            Result model,   Added result normalization,  93 unit tests   Pending user
+                            banner            JSON/CSV report functions,   pass (Phase 1 +   review before
+                            identification,   best-effort TCP banner       Phase 2 + Phase   committing
+                            JSON/CSV          grabbing, and CLI/Flask     3 subsets);     Phase 3.
+                            reporting         structured export route     added tests for
+                                            (/api/scan/export) plus      normalization,
+                                            CLI export smoke tests      JSON, CSV, file
+                                            (tests/                output, banner
+                                            test_phase3_reports.py,    grabbing, and
+                                            tests/test_phase3_cli_     structured export
+                                            export.py, plus Flask     route; no
+                                            route tests). Banner is    dashboard visual
+                                            best-effort (empty is     browser review
+                                            normal). CLI now returns   performed.
+                                            exit code so callers can
+                                            test success/failure.
+
   2026-10-10   Project      Defined         Specification           Repository       No phase approval
                definition   NetScan-Lite    documented;             state, Python    or commit
                             scope, learning implementation not yet  environment, Git recorded.
@@ -792,6 +809,14 @@ choices.
                                          behavior, not     
                                          wrap an existing  
                                          scanner.          
+
+  2026-10-11        CLI and Flask        CLI and Flask now   Phase 3 tests
+                    share a structured   share a normalized   cover JSON/CSV
+                    result shape and     result shape and     output, metadata,
+                    export path          export path           and best-effort
+                    (Phase 3)            (Phase 3). Dashboard  TCP banners.
+                                         export buttons added
+                                         under existing UI.
 
   2026-10-10        Use TCP connect      Connect scanning  SYN scanning
                     scanning as the      is easier to      requires a separate

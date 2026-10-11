@@ -182,6 +182,49 @@ class TestScanAPI(unittest.TestCase):
                 self.assertIn("service", rec)
                 self.assertIn("error", rec)
 
+    def test_structured_export_added(self):
+        with app.test_client() as c:
+            r = c.post(
+                "/api/scan/export",
+                json={"target": "127.0.0.1", "ports": "22", "timeout": 0.2},
+                content_type="application/json",
+            )
+            self.assertEqual(r.status_code, 200)
+            body = r.get_json()
+            self.assertEqual(body["target"], "127.0.0.1")
+            self.assertEqual(body["mode"], "tcp")
+            self.assertIn("results", body)
+            self.assertIn("normalized_results", body)
+            self.assertIn("metadata", body)
+            self.assertIsInstance(body["normalized_results"], list)
+            self.assertEqual(body["normalized_results"][0]["protocol"], "tcp")
+            self.assertIn("banner", body["normalized_results"][0])
+            self.assertIn("scan_start", body["metadata"])
+            self.assertIn("elapsed_seconds", body["metadata"])
+            self.assertIn("ports_scanned", body["metadata"])
+            self.assertEqual(body["metadata"]["ports_scanned"], 1)
+
+    def test_structured_export_rejects_public_target(self):
+        with app.test_client() as c:
+            r = c.post(
+                "/api/scan/export",
+                json={"target": "8.8.8.8", "ports": "22"},
+                content_type="application/json",
+            )
+            self.assertEqual(r.status_code, 403)
+            self.assertIn("unauthorized", r.get_json()["error"].lower())
+
+    def test_structured_export_rejects_invalid_ports(self):
+        with app.test_client() as c:
+            r = c.post(
+                "/api/scan/export",
+                json={"target": "127.0.0.1", "ports": "bad"},
+                content_type="application/json",
+            )
+            self.assertEqual(r.status_code, 400)
+            self.assertIn("Port must be", r.get_json()["error"])
+
+
 
 if __name__ == "__main__":
     unittest.main()
